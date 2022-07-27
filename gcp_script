@@ -1,0 +1,63 @@
+#!/bin/bash
+
+#--------VARIABLES-------------
+
+east_zone=us-east1-b
+west_zone=us-west1-b
+east_flag=1
+west_flag=1
+
+#Grabbing the status of each cluster (is it already running?)
+east_1=$(gcloud compute instances describe dallas-east-node1 --zone=us-east1-b | grep status | cut -c 9-20)
+east_2=$(gcloud compute instances describe dallas-east-node2 --zone=us-east1-b | grep status | cut -c 9-20)
+east_3=$(gcloud compute instances describe dallas-east-node3 --zone=us-east1-b | grep status | cut -c 9-20)
+
+if [ "$east_1" = 'TERMINATED' ] && [ "$east_2" = 'TERMINATED' ] && [ "$east_3" = 'TERMINATED' ]; then
+	east_flag=0
+fi
+
+west_1=$(gcloud compute instances describe dallas-west-node1 --zone=us-west1-b | grep status | cut -c 9-20)
+west_2=$(gcloud compute instances describe dallas-west-node2 --zone=us-west1-b | grep status | cut -c 9-20)
+west_3=$(gcloud compute instances describe dallas-west-node3 --zone=us-west1-b | grep status | cut -c 9-20)
+
+if [ "$west_1" = 'TERMINATED' ] && [ "$west_2" = 'TERMINATED' ] && [ "$west_3" = 'TERMINATED' ]; then
+        west_flag=0
+fi
+
+#--------START OR STOP/SPECIFY CLUSTER-----------
+
+if [ $1 = 'start' ]; then
+       	if [ $2 = 'east' ]; then
+		echo "Starting $cluster Cluster"
+		gcloud compute instances start dallas-east-node1 --zone=$east_zone &
+	        gcloud compute instances start dallas-east-node2 --zone=$east_zone &
+        	gcloud compute instances start dallas-east-node3 --zone=$east_zone &
+	else
+		gcloud compute instances start dallas-west-node1 --zone=$west_zone &
+		gcloud compute instances start dallas-west-node2 --zone=$west_zone &		
+		gcloud compute instances start dallas-west-node3 --zone=$west_zone &
+	fi	
+
+fi
+
+if [ $1 = "stop" ]; then
+        if [ $2 = 'east' ]; then
+		if [ $east_flag = "0" ]; then 						#CHECKING TO SEE IF INSTANCES ARE ALREADY STOPPED
+			echo "Instances are already stopped!"
+			exit 1
+		fi
+		echo "Stopping $cluster Cluster"
+                gcloud compute instances stop dallas-east-node1 --zone=$east_zone &
+                gcloud compute instances stop dallas-east-node2 --zone=$east_zone &
+                gcloud compute instances stop dallas-east-node3 --zone=$east_zone &
+        else
+		if [ $west_flag = 0 ]; then                                              #CHECKING TO SEE IF INSTANCES ARE ALREADY STOPPED
+                        echo "Instances are already stopped!"
+                        exit 1
+                fi
+                gcloud compute instances stop dallas-west-node1 --zone=$west_zone &
+                gcloud compute instances stop dallas-west-node2 --zone=$west_zone &
+                gcloud compute instances stop dallas-west-node3 --zone=$west_zone &
+        fi
+
+fi
